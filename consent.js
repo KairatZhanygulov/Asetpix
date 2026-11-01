@@ -1,19 +1,51 @@
 (() => {
- const version = '2026-10-31';
+ const version = '2026-11-01';
  const key = 'asetpix-privacy-consent';
  const gate = document.getElementById('consent-gate');
  const site = document.getElementById('site-content');
  const checkbox = document.getElementById('consent-checkbox');
+ const marketing = document.getElementById('marketing-checkbox');
+ let trackingEnabled = false;
+ let pageViewed = false;
+ function enableTracking() {
+  trackingEnabled = true;
+  if (!window.fbq) {
+   const n = window.fbq = function() { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+   if (!window._fbq) window._fbq = n;
+   n.push = n; n.loaded = true; n.version = '2.0'; n.queue = [];
+   const script = document.createElement('script');
+   script.async = true; script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+   document.head.appendChild(script);
+   window.fbq('init', '1624640842472569');
+   window.fbq('set', 'autoConfig', false, '1624640842472569');
+  }
+  window.fbq('consent', 'grant');
+  if (!pageViewed) { window.fbq('track', 'PageView'); pageViewed = true; }
+ }
+ document.addEventListener('click', e => {
+  const link = e.target.closest?.('a[href]');
+  if (!trackingEnabled || !link) return;
+  const url = new URL(link.href, location.href);
+  if (url.hostname === 'wa.me' || url.hostname === 'api.whatsapp.com') {
+   window.fbq('track', 'Contact', {content_name: 'WhatsApp', content_category: 'whatsapp_click'});
+  }
+ });
+ document.getElementById('privacy-settings').addEventListener('click', () => {
+  checkbox.checked = true; marketing.checked = trackingEnabled; accept.disabled = false;
+  gate.hidden = false; site.inert = true; document.documentElement.classList.add('consent-locked');
+  document.getElementById('consent-title').focus();
+ });
  const accept = document.getElementById('consent-accept');
  function unlock() { gate.hidden = true; site.inert = false; document.documentElement.classList.remove('consent-locked'); }
  let saved;
  try { saved = JSON.parse(localStorage.getItem(key)); } catch {}
- if (saved && saved.version === version && saved.accepted === true) { unlock(); return; }
- document.getElementById('consent-title').focus();
+ if (saved && saved.version === version && saved.accepted === true) { if (saved.marketing === true) enableTracking(); unlock(); } else { document.getElementById('consent-title').focus(); }
  checkbox.addEventListener('change', () => { accept.disabled = !checkbox.checked; });
  accept.addEventListener('click', () => {
   if (!checkbox.checked) return;
-  try { localStorage.setItem(key, JSON.stringify({version, accepted: true, acceptedAt: new Date().toISOString()})); } catch {}
+  try { localStorage.setItem(key, JSON.stringify({version, accepted: true, marketing: marketing.checked, acceptedAt: new Date().toISOString()})); } catch {}
+  if (marketing.checked) enableTracking();
+  else { trackingEnabled = false; if (window.fbq) window.fbq('consent', 'revoke'); }
   unlock();
   site.querySelector('a').focus();
  });
