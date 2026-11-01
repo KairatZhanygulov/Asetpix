@@ -1,0 +1,13 @@
+{
+  "name": "asetpix-website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "node --check scripts/config.js && node --check scripts/translations.js && node --check scripts/app.js && node --check scripts/consent.js"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}
